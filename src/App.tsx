@@ -27,6 +27,7 @@ import {
   resetToSampleData,
   addOrUpdateBerkas,
   addOrUpdateDokumen,
+  relocateDokumenToBerkas,
   addOrUpdateRekomendasi,
   addAuditLog,
 } from './utils/storage';
@@ -231,6 +232,21 @@ export default function App() {
       detail: `Memperbarui status rekomendasi ${rek.kode} menjadi "${rek.status}" dengan ${rek.arsipBuktiIds.length} arsip bukti terlampir.`,
     });
     refreshAllData();
+  };
+
+  // Relocate Document Handler (Koreksi Rumah Berkas / Unit Rekomendasi)
+  const handleRelocateDokumen = (docId: string, newBerkasId: string) => {
+    const res = relocateDokumenToBerkas(docId, newBerkasId);
+    if (res.success && res.doc) {
+      const targetBerkas = berkasList.find((b) => b.id === newBerkasId);
+      addAuditLog({
+        pengguna: `Riandi J. Sulistyono (${currentRole})`,
+        peran: currentRole,
+        aksi: 'Koreksi Rumah Berkas',
+        detail: `Memindahkan dokumen ${res.doc.namaFile} ke rumah ${targetBerkas?.judul || newBerkasId} (${targetBerkas?.unitKerja}).`,
+      });
+      refreshAllData();
+    }
   };
 
   // Sync Dokumen to Google Docs Handler
@@ -538,6 +554,7 @@ export default function App() {
               preselectedTahap={uploadPreselectedTahap}
               onPreviewDokumen={(doc) => setSelectedPreviewDoc(doc)}
               onOpenBerkas={(id) => setSelectedBerkasDetailId(id)}
+              onRelocateDokumen={handleRelocateDokumen}
             />
           )}
 

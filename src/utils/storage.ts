@@ -148,7 +148,51 @@ export function addOrUpdateBerkas(berkas: BerkasKegiatan): void {
 
 // Dokumen CRUD
 export function getDokumenArsip(): DokumenArsip[] {
-  return loadFromStorage<DokumenArsip[]>(STORAGE_KEYS.DOKUMEN, SAMPLE_DOKUMEN);
+  const docs = loadFromStorage<DokumenArsip[]>(STORAGE_KEYS.DOKUMEN, SAMPLE_DOKUMEN);
+
+  // Self-healing migration: Automatically redirect any misplaced PP TUNAS documents
+  // from Sekretaris Deputi (BRK-2026-001) or other units into Asdep Media (BRK-2026-005)
+  let changed = false;
+  const correctedDocs = docs.map((doc) => {
+    const isTunas = /tunas|perlindungan anak/i.test(
+      `${doc.namaFile} ${doc.usulanNamaFile || ''} ${doc.ringkasan}`
+    );
+    if (isTunas && doc.berkasId !== 'BRK-2026-005') {
+      changed = true;
+      return {
+        ...doc,
+        berkasId: 'BRK-2026-005',
+        usulanNamaFile: doc.usulanNamaFile?.replace(/B-01/g, 'B-05') || doc.usulanNamaFile,
+      };
+    }
+    return doc;
+  });
+
+  // Ensure official DOC-2026-005-A is present
+  if (!correctedDocs.some((d) => d.id === 'DOC-2026-005-A')) {
+    const sampleTunas = SAMPLE_DOKUMEN.find((d) => d.id === 'DOC-2026-005-A');
+    if (sampleTunas) {
+      correctedDocs.push(sampleTunas);
+      changed = true;
+    }
+  }
+
+  // Ensure official DOC-2026-005-B is present
+  if (!correctedDocs.some((d) => d.id === 'DOC-2026-005-B')) {
+    const sampleTunasPlan = SAMPLE_DOKUMEN.find((d) => d.id === 'DOC-2026-005-B');
+    if (sampleTunasPlan) {
+      correctedDocs.push(sampleTunasPlan);
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    saveDokumenArsip(correctedDocs);
+    syncBerkasCompleteness('BRK-2026-005');
+    syncBerkasCompleteness('BRK-2026-001');
+  }
+
+  return correctedDocs;
 }
 
 export function saveDokumenArsip(items: DokumenArsip[]): void {
@@ -158,6 +202,8 @@ export function saveDokumenArsip(items: DokumenArsip[]): void {
 export function addOrUpdateDokumen(doc: DokumenArsip): void {
   const all = getDokumenArsip();
   const index = all.findIndex((d) => d.id === doc.id);
+  const oldBerkasId = index >= 0 ? all[index].berkasId : null;
+
   if (index >= 0) {
     all[index] = doc;
   } else {
@@ -165,6 +211,38 @@ export function addOrUpdateDokumen(doc: DokumenArsip): void {
   }
   saveDokumenArsip(all);
   syncBerkasCompleteness(doc.berkasId);
+  if (oldBerkasId && oldBerkasId !== doc.berkasId) {
+    syncBerkasCompleteness(oldBerkasId);
+  }
+}
+
+/**
+ * Move / Relocate a document to another Berkas (Rumah Rekomendasi).
+ * Corrects instances where a document ended up in the wrong unit (e.g. salah kamar).
+ */
+export function relocateDokumenToBerkas(
+  docId: string,
+  newBerkasId: string
+): { success: boolean; doc?: DokumenArsip; oldBerkasId?: string } {
+  const all = getDokumenArsip();
+  const index = all.findIndex((d) => d.id === docId);
+  if (index < 0) return { success: false };
+
+  const oldDoc = all[index];
+  const oldBerkasId = oldDoc.berkasId;
+  const updatedDoc: DokumenArsip = {
+    ...oldDoc,
+    berkasId: newBerkasId,
+  };
+
+  all[index] = updatedDoc;
+  saveDokumenArsip(all);
+  syncBerkasCompleteness(newBerkasId);
+  if (oldBerkasId && oldBerkasId !== newBerkasId) {
+    syncBerkasCompleteness(oldBerkasId);
+  }
+
+  return { success: true, doc: updatedDoc, oldBerkasId };
 }
 
 // Rekomendasi CRUD

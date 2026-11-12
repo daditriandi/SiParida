@@ -219,3 +219,191 @@ export function guessDocumentMetadata(fileName: string, textSnippet: string = ''
     kataKunci,
   };
 }
+
+/**
+ * Intelligent "Rumah Rekomendasi" (Berkas Kegiatan) Matcher
+ * Maps an uploaded document to its correct Unit Kerja / Berkas Kegiatan
+ * so files like "Laporan ND PP Tunas" are guaranteed to go into
+ * "Asdep Koordinasi Media Komunikasi dan Informasi" (BRK-2026-005)
+ * instead of defaulting incorrectly into "Sekretaris Deputi" (BRK-2026-001).
+ */
+export function matchDocumentToBerkas(
+  fileName: string,
+  textSnippet: string = '',
+  berkasList: { id: string; nomorBerkas: string; judul: string; unitKerja: string }[],
+  preferredUnit?: string
+): { berkasId: string; berkasJudul: string; unitKerja: string; matchReason: string } {
+  const combined = (fileName + ' ' + textSnippet).toLowerCase();
+
+  // 1. Rule: PP TUNAS / Pelindungan Anak / Literasi Digital Ruang Publik -> Asdep Media (BRK-2026-005)
+  if (/tunas|perlindungan anak|pelindungan anak/i.test(combined)) {
+    const tunasBerkas =
+      berkasList.find((b) => /tunas/i.test(b.judul) || b.id === 'BRK-2026-005') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Media Komunikasi dan Informasi');
+    if (tunasBerkas) {
+      return {
+        berkasId: tunasBerkas.id,
+        berkasJudul: tunasBerkas.judul,
+        unitKerja: tunasBerkas.unitKerja,
+        matchReason: 'Terdeteksi Regulasi PP TUNAS / Pelindungan Anak -> Disalurkan ke Asdep Koordinasi Media Komunikasi dan Informasi',
+      };
+    }
+  }
+
+  // 2. Rule: Indeks Kemerdekaan Pers (IKP) / Dewan Pers / BEJO\'S / Jurnalis / Media Massa -> Asdep Media (BRK-2026-004)
+  if (/pers\b|ikp\b|bejo|dewan pers|jurnalis|wartawan/i.test(combined)) {
+    const mediaBerkas =
+      berkasList.find((b) => /pers|bejo/i.test(b.judul) || b.id === 'BRK-2026-004') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Media Komunikasi dan Informasi');
+    if (mediaBerkas) {
+      return {
+        berkasId: mediaBerkas.id,
+        berkasJudul: mediaBerkas.judul,
+        unitKerja: mediaBerkas.unitKerja,
+        matchReason: 'Terdeteksi Kemerdekaan Pers / BEJO\'S -> Disalurkan ke Asdep Koordinasi Media Komunikasi dan Informasi',
+      };
+    }
+  }
+
+  // 3. Rule: KPIP / Keterbukaan Informasi Publik / KIP -> Asdep Komunikasi Publik (BRK-2026-002)
+  if (/kpip|keterbukaan informasi|komisi informasi|uu 14/i.test(combined)) {
+    const kpipBerkas =
+      berkasList.find((b) => /kpip|keterbukaan/i.test(b.judul) || b.id === 'BRK-2026-002') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Pengelolaan Komunikasi & Informasi Publik');
+    if (kpipBerkas) {
+      return {
+        berkasId: kpipBerkas.id,
+        berkasJudul: kpipBerkas.judul,
+        unitKerja: kpipBerkas.unitKerja,
+        matchReason: 'Terdeteksi Keterbukaan Informasi Publik (KPIP) -> Disalurkan ke Asdep Pengelolaan Komunikasi & Informasi Publik',
+      };
+    }
+  }
+
+  // 4. Rule: Humas K/L / DFK / Disrupsi Informasi -> Asdep Komunikasi Publik (BRK-2026-003)
+  if (/humas|dfk|disrupsi/i.test(combined)) {
+    const humasBerkas =
+      berkasList.find((b) => /humas|dfk/i.test(b.judul) || b.id === 'BRK-2026-003') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Pengelolaan Komunikasi & Informasi Publik');
+    if (humasBerkas) {
+      return {
+        berkasId: humasBerkas.id,
+        berkasJudul: humasBerkas.judul,
+        unitKerja: humasBerkas.unitKerja,
+        matchReason: 'Terdeteksi Humas & DFK -> Disalurkan ke Asdep Pengelolaan Komunikasi & Informasi Publik',
+      };
+    }
+  }
+
+  // 5. Rule: Blankspot / Pos TNI Perbatasan / 3T -> Asdep Telekomunikasi (BRK-2026-006)
+  if (/blankspot|tni perbatasan|pos tni|desa 3t|bakti/i.test(combined)) {
+    const blankspotBerkas =
+      berkasList.find((b) => /blankspot/i.test(b.judul) || b.id === 'BRK-2026-006') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Telekomunikasi dan Informatika');
+    if (blankspotBerkas) {
+      return {
+        berkasId: blankspotBerkas.id,
+        berkasJudul: blankspotBerkas.judul,
+        unitKerja: blankspotBerkas.unitKerja,
+        matchReason: 'Terdeteksi Blankspot 3T -> Disalurkan ke Asdep Koordinasi Telekomunikasi dan Informatika',
+      };
+    }
+  }
+
+  // 6. Rule: Permendagri 7 / IKN / PDN / Pusat Data Nasional -> Asdep Telekomunikasi (BRK-2026-007)
+  if (/permendagri|ikn|pdn|pusat data nasional/i.test(combined)) {
+    const pdnBerkas =
+      berkasList.find((b) => /pdn|ikn/i.test(b.judul) || b.id === 'BRK-2026-007') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Telekomunikasi dan Informatika');
+    if (pdnBerkas) {
+      return {
+        berkasId: pdnBerkas.id,
+        berkasJudul: pdnBerkas.judul,
+        unitKerja: pdnBerkas.unitKerja,
+        matchReason: 'Terdeteksi PDN / IKN -> Disalurkan ke Asdep Koordinasi Telekomunikasi dan Informatika',
+      };
+    }
+  }
+
+  // 7. Rule: Satgas Judi Daring / Rekening Bank / PPATK -> Asdep Pelindungan Data (BRK-2026-009)
+  if (/judi|perjudian|rekening|ppatk|satgas judi/i.test(combined)) {
+    const judiBerkas =
+      berkasList.find((b) => /judi/i.test(b.judul) || b.id === 'BRK-2026-009') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Pelindungan Data dan Transaksi Elektronik');
+    if (judiBerkas) {
+      return {
+        berkasId: judiBerkas.id,
+        berkasJudul: judiBerkas.judul,
+        unitKerja: judiBerkas.unitKerja,
+        matchReason: 'Terdeteksi Satgas Perjudian Daring -> Disalurkan ke Asdep Pelindungan Data dan Transaksi Elektronik',
+      };
+    }
+  }
+
+  // 8. Rule: GNSS / AirNav / Frekuensi Penerbangan -> Asdep Pelindungan Data (BRK-2026-010)
+  if (/gnss|airnav|penerbangan|interferensi/i.test(combined)) {
+    const gnssBerkas =
+      berkasList.find((b) => /gnss|airnav/i.test(b.judul) || b.id === 'BRK-2026-010') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Pelindungan Data dan Transaksi Elektronik');
+    if (gnssBerkas) {
+      return {
+        berkasId: gnssBerkas.id,
+        berkasJudul: gnssBerkas.judul,
+        unitKerja: gnssBerkas.unitKerja,
+        matchReason: 'Terdeteksi GNSS / Navigasi Penerbangan -> Disalurkan ke Asdep Pelindungan Data dan Transaksi Elektronik',
+      };
+    }
+  }
+
+  // 9. Rule: BSSN / GCI / Siber -> Asdep Pelindungan Data (BRK-2026-011)
+  if (/bssn|gci|siber|cyber/i.test(combined)) {
+    const siberBerkas =
+      berkasList.find((b) => /gci|siber/i.test(b.judul) || b.id === 'BRK-2026-011') ||
+      berkasList.find((b) => b.unitKerja === 'Asdep Koordinasi Pelindungan Data dan Transaksi Elektronik');
+    if (siberBerkas) {
+      return {
+        berkasId: siberBerkas.id,
+        berkasJudul: siberBerkas.judul,
+        unitKerja: siberBerkas.unitKerja,
+        matchReason: 'Terdeteksi Keamanan Siber / BSSN -> Disalurkan ke Asdep Pelindungan Data dan Transaksi Elektronik',
+      };
+    }
+  }
+
+  // 10. Rule: SAKIP / Kearsipan / ANRI -> Sekretaris Deputi (BRK-2026-001)
+  if (/sakip|kearsipan|anri|srikandi/i.test(combined)) {
+    const sesdepBerkas =
+      berkasList.find((b) => /sakip|kearsipan/i.test(b.judul) || b.id === 'BRK-2026-001') ||
+      berkasList.find((b) => b.unitKerja === 'Sekretaris Deputi');
+    if (sesdepBerkas) {
+      return {
+        berkasId: sesdepBerkas.id,
+        berkasJudul: sesdepBerkas.judul,
+        unitKerja: sesdepBerkas.unitKerja,
+        matchReason: 'Terdeteksi Tata Kelola Kearsipan / SAKIP -> Disalurkan ke Sekretaris Deputi',
+      };
+    }
+  }
+
+  // 11. Fallback: Check if user currently selected a specific unit
+  if (preferredUnit && preferredUnit !== 'Semua' && preferredUnit !== 'Semua Unit Kerja (6)') {
+    const unitMatch = berkasList.find((b) => b.unitKerja === preferredUnit);
+    if (unitMatch) {
+      return {
+        berkasId: unitMatch.id,
+        berkasJudul: unitMatch.judul,
+        unitKerja: unitMatch.unitKerja,
+        matchReason: `Diselaraskan dengan unit kerja aktif: ${preferredUnit}`,
+      };
+    }
+  }
+
+  // 12. Final default: first berkas in list
+  const fallback = berkasList[0] || { id: 'BRK-2026-001', judul: 'Kegiatan Kedeputian', unitKerja: 'Sekretaris Deputi' };
+  return {
+    berkasId: fallback.id,
+    berkasJudul: fallback.judul,
+    unitKerja: fallback.unitKerja,
+    matchReason: 'Diselaraskan dengan berkas kegiatan default',
+  };
+}
