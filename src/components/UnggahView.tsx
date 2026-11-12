@@ -68,6 +68,7 @@ export const UnggahView: React.FC<UnggahViewProps> = ({
     berkasList[0]?.id || ''
   );
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle files selected via input or drop
@@ -224,7 +225,10 @@ export const UnggahView: React.FC<UnggahViewProps> = ({
 
   const handleSaveToRegister = async (item: QueuedUpload) => {
     if (!item.selectedBerkasId) {
-      alert('Pilih berkas kegiatan terlebih dahulu.');
+      setFeedbackMsg({
+        type: 'error',
+        text: 'Pilih berkas kegiatan terlebih dahulu sebelum menyimpan.',
+      });
       return;
     }
 
@@ -294,8 +298,16 @@ export const UnggahView: React.FC<UnggahViewProps> = ({
       setQueue((prev) =>
         prev.map((q) => (q.id === item.id ? { ...q, isSaved: true } : q))
       );
+      setFeedbackMsg({
+        type: 'success',
+        text: `Dokumen "${newDoc.usulanNamaFile}" berhasil disimpan ke register!`,
+      });
+      setTimeout(() => setFeedbackMsg(null), 4000);
     } catch (err: any) {
-      alert(`Gagal menyimpan ke register: ${err.message}`);
+      setFeedbackMsg({
+        type: 'error',
+        text: `Gagal menyimpan ke register: ${err.message}`,
+      });
     }
   };
 
@@ -335,6 +347,24 @@ export const UnggahView: React.FC<UnggahViewProps> = ({
           </select>
         </div>
       </div>
+
+      {feedbackMsg && (
+        <div
+          className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between ${
+            feedbackMsg.type === 'error'
+              ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+              : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+          }`}
+        >
+          <span>{feedbackMsg.text}</span>
+          <button
+            onClick={() => setFeedbackMsg(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Drag & Drop Zone */}
       <div

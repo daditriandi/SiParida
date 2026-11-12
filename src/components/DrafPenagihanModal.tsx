@@ -53,7 +53,12 @@ export const DrafPenagihanModal: React.FC<DrafPenagihanModalProps> = ({
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Failed to generate docx:', err);
-      alert('Terjadi kendala saat membuat dokumen Word (.docx). Silakan coba kembali.');
+      setDocsResult({
+        success: false,
+        docUrl: '',
+        mode: 'Google Drive',
+        error: 'Terjadi kendala saat membuat dokumen Word (.docx). Silakan coba kembali.',
+      });
     } finally {
       setIsDownloadingDocx(false);
     }
@@ -77,12 +82,14 @@ export const DrafPenagihanModal: React.FC<DrafPenagihanModalProps> = ({
 
       const res = await syncDrafPenagihanToGoogleDocs(rekomendasi, token);
       setDocsResult(res);
-      if (res.success && res.docUrl) {
-        window.open(res.docUrl, '_blank', 'noopener,noreferrer');
-      }
     } catch (err: any) {
       console.error('Error syncing to Google Docs:', err);
-      alert(err.message || 'Gagal menyinkronkan draf ke Google Docs');
+      setDocsResult({
+        success: false,
+        docUrl: '',
+        mode: 'Google Drive',
+        error: err.message || 'Gagal menyinkronkan draf ke Google Docs',
+      });
     } finally {
       setIsSyncingDocs(false);
     }

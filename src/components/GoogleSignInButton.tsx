@@ -6,12 +6,14 @@ import { LogOut, CheckCircle2, Loader2 } from 'lucide-react';
 interface GoogleSignInButtonProps {
   currentUser: User | null;
   onAuthChange?: (user: User | null) => void;
+  onError?: (err: any) => void;
   compact?: boolean;
 }
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   currentUser,
   onAuthChange,
+  onError,
   compact = false,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,14 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       if (onAuthChange) onAuthChange(res.user);
     } catch (err: any) {
       console.error('Google Sign In failed:', err);
-      setErrorMsg(err.message || 'Gagal masuk dengan Google');
+      if (onError) {
+        onError(err);
+      }
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        setErrorMsg('Domain belum diotorisasi di Firebase');
+      } else {
+        setErrorMsg(err.message || 'Gagal masuk dengan Google');
+      }
     } finally {
       setLoading(false);
     }

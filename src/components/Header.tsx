@@ -17,6 +17,7 @@ interface HeaderProps {
   onNavigateToRekomendasi: () => void;
   googleUser?: User | null;
   onGoogleAuthChange?: (user: User | null) => void;
+  onGoogleAuthError?: (err: any) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateToRekomendasi,
   googleUser,
   onGoogleAuthChange,
+  onGoogleAuthError,
 }) => {
   return (
     <header className="h-16 px-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 sticky top-0 z-20">
@@ -88,6 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
           <GoogleSignInButton
             currentUser={googleUser || null}
             onAuthChange={onGoogleAuthChange}
+            onError={onGoogleAuthError}
             compact={true}
           />
         </div>

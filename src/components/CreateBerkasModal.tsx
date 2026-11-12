@@ -38,6 +38,7 @@ export const CreateBerkasModal: React.FC<CreateBerkasModalProps> = ({
   const [deskripsi, setDeskripsi] = useState('');
   const [downloadFormat, setDownloadFormat] = useState<'doc' | 'txt'>('doc');
   const [downloadSuccessMsg, setDownloadSuccessMsg] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -255,9 +256,10 @@ No | Uraian Kendala/Risiko | Kemungkinan (1-5) | Dampak (1-5) | Level Risiko | R
   const handleSubmit = (e: React.FormEvent, andDownload: boolean = false) => {
     e.preventDefault();
     if (!judul.trim() || !nomorBerkas.trim()) {
-      alert('Harap isi Judul Kegiatan dan Nomor Berkas');
+      setFormError('Harap isi Judul Kegiatan dan Nomor Berkas');
       return;
     }
+    setFormError(null);
 
     const newBerkas: BerkasKegiatan = {
       id: `BRK-${Date.now()}`,
@@ -604,6 +606,12 @@ No | Uraian Kendala/Risiko | Kemungkinan (1-5) | Dampak (1-5) | Level Risiko | R
               </button>
             </div>
           </div>
+
+          {formError && (
+            <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold">
+              ⚠️ {formError}
+            </div>
+          )}
 
           {/* Modal Action Buttons */}
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">

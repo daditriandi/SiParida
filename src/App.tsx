@@ -45,6 +45,7 @@ import { PengaturanView } from './components/PengaturanView';
 import { AuditLogView } from './components/AuditLogView';
 import { DokumenPreviewModal } from './components/DokumenPreviewModal';
 import { GoogleAuthGuideModal } from './components/GoogleAuthGuideModal';
+import { VercelDomainModal } from './components/VercelDomainModal';
 import { User } from 'firebase/auth';
 import {
   initAuth,
@@ -58,7 +59,7 @@ import {
   syncDashboardToGoogleDocs,
   DashboardSyncData,
 } from './services/googleDocs';
-import { CheckCircle2, AlertCircle, Info, ExternalLink, X, HelpCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, ExternalLink, X, HelpCircle, Globe } from 'lucide-react';
 
 export default function App() {
   // Initialize storage
@@ -76,6 +77,7 @@ export default function App() {
   // Google Workspace Auth State
   const [googleUser, setGoogleUser] = useState<User | null>(() => getCurrentUser());
   const [isAuthGuideOpen, setIsAuthGuideOpen] = useState(false);
+  const [isVercelDomainModalOpen, setIsVercelDomainModalOpen] = useState(false);
   const [isSyncingDashboard, setIsSyncingDashboard] = useState(false);
   const [lastSyncedDashboardUrl, setLastSyncedDashboardUrl] = useState<string | null>(null);
   const [syncToast, setSyncToast] = useState<{
@@ -83,6 +85,7 @@ export default function App() {
     title: string;
     message: string;
     docUrl?: string;
+    isUnauthorizedDomain?: boolean;
   } | null>(null);
 
   // Initialize Auth Listener
@@ -234,7 +237,17 @@ export default function App() {
           token = authRes.accessToken;
           setGoogleUser(authRes.user);
         } catch (authErr: any) {
-          if (authErr.code === 'auth/popup-closed-by-user' || authErr.code === 'auth/cancelled-popup-request') {
+          if (authErr?.code === 'auth/unauthorized-domain' || authErr?.message?.includes('unauthorized-domain')) {
+            setIsVercelDomainModalOpen(true);
+            setSyncToast({
+              type: 'error',
+              title: 'Domain Vercel Belum Terdaftar di Firebase',
+              message: `Domain "${typeof window !== 'undefined' ? window.location.hostname : 'vercel.app'}" belum ditambahkan ke Authorized Domains di Firebase Console.`,
+              isUnauthorizedDomain: true,
+            });
+            return;
+          }
+          if (authErr?.code === 'auth/popup-closed-by-user' || authErr?.code === 'auth/cancelled-popup-request') {
             setIsAuthGuideOpen(true);
             setSyncToast({
               type: 'info',
@@ -284,6 +297,16 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('handleSyncDokumen error:', err);
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        setIsVercelDomainModalOpen(true);
+        setSyncToast({
+          type: 'error',
+          title: 'Domain Vercel Belum Terdaftar di Firebase',
+          message: `Domain "${typeof window !== 'undefined' ? window.location.hostname : 'vercel.app'}" belum ditambahkan ke Authorized Domains di Firebase Console.`,
+          isUnauthorizedDomain: true,
+        });
+        return;
+      }
       setSyncToast({
         type: 'error',
         title: 'Gagal Sinkronisasi Dokumen',
@@ -303,7 +326,17 @@ export default function App() {
           token = authRes.accessToken;
           setGoogleUser(authRes.user);
         } catch (authErr: any) {
-          if (authErr.code === 'auth/popup-closed-by-user' || authErr.code === 'auth/cancelled-popup-request') {
+          if (authErr?.code === 'auth/unauthorized-domain' || authErr?.message?.includes('unauthorized-domain')) {
+            setIsVercelDomainModalOpen(true);
+            setSyncToast({
+              type: 'error',
+              title: 'Domain Vercel Belum Terdaftar di Firebase',
+              message: `Domain "${typeof window !== 'undefined' ? window.location.hostname : 'vercel.app'}" belum ditambahkan ke Authorized Domains di Firebase Console.`,
+              isUnauthorizedDomain: true,
+            });
+            return;
+          }
+          if (authErr?.code === 'auth/popup-closed-by-user' || authErr?.code === 'auth/cancelled-popup-request') {
             setIsAuthGuideOpen(true);
             setSyncToast({
               type: 'info',
@@ -343,6 +376,16 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('handleSyncDashboard error:', err);
+      if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+        setIsVercelDomainModalOpen(true);
+        setSyncToast({
+          type: 'error',
+          title: 'Domain Vercel Belum Terdaftar di Firebase',
+          message: `Domain "${typeof window !== 'undefined' ? window.location.hostname : 'vercel.app'}" belum ditambahkan ke Authorized Domains di Firebase Console.`,
+          isUnauthorizedDomain: true,
+        });
+        return;
+      }
       setSyncToast({
         type: 'error',
         title: 'Gagal Sinkronisasi Dashboard',
@@ -414,6 +457,11 @@ export default function App() {
           onNavigateToRekomendasi={() => setCurrentPage('rekomendasi')}
           googleUser={googleUser}
           onGoogleAuthChange={(user) => setGoogleUser(user)}
+          onGoogleAuthError={(err) => {
+            if (err?.code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain')) {
+              setIsVercelDomainModalOpen(true);
+            }
+          }}
         />
 
         <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
@@ -447,6 +495,7 @@ export default function App() {
               onSyncDashboard={handleSyncDashboard}
               googleUser={googleUser}
               onOpenAuthGuide={() => setIsAuthGuideOpen(true)}
+              onOpenVercelGuide={() => setIsVercelDomainModalOpen(true)}
               isSyncingDashboard={isSyncingDashboard}
               lastSyncedDashboardUrl={lastSyncedDashboardUrl}
             />
@@ -586,6 +635,12 @@ export default function App() {
         }}
       />
 
+      {/* Vercel Domain Resolution Modal (auth/unauthorized-domain) */}
+      <VercelDomainModal
+        isOpen={isVercelDomainModalOpen}
+        onClose={() => setIsVercelDomainModalOpen(false)}
+      />
+
       {/* Google Docs Sync Feedback Toast */}
       {syncToast && (
         <div className="fixed bottom-6 right-6 z-50 max-w-md w-full p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl animate-fadeIn flex items-start gap-3">
@@ -612,7 +667,20 @@ export default function App() {
                 </a>
               )}
 
-              {syncToast.type === 'info' && (
+              {syncToast.isUnauthorizedDomain && (
+                <button
+                  onClick={() => {
+                    setIsVercelDomainModalOpen(true);
+                    setSyncToast(null);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Buka Solusi Vercel</span>
+                </button>
+              )}
+
+              {syncToast.type === 'info' && !syncToast.isUnauthorizedDomain && (
                 <button
                   onClick={() => {
                     setIsAuthGuideOpen(true);
@@ -630,7 +698,7 @@ export default function App() {
           <button
             onClick={() => setSyncToast(null)}
             aria-label="Tutup Pemberitahuan"
-            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>

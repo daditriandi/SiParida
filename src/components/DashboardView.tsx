@@ -28,6 +28,7 @@ import {
   ExternalLink,
   HelpCircle,
   Sparkles,
+  Globe,
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { DashboardSyncData, SyncDocsResult } from '../services/googleDocs';
@@ -46,6 +47,7 @@ interface DashboardViewProps {
   onSyncDashboard?: (data: DashboardSyncData) => Promise<SyncDocsResult | void>;
   googleUser?: User | null;
   onOpenAuthGuide?: () => void;
+  onOpenVercelGuide?: () => void;
   isSyncingDashboard?: boolean;
   lastSyncedDashboardUrl?: string | null;
 }
@@ -64,6 +66,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSyncDashboard,
   googleUser,
   onOpenAuthGuide,
+  onOpenVercelGuide,
   isSyncingDashboard = false,
   lastSyncedDashboardUrl = null,
 }) => {
@@ -324,6 +327,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenVercelGuide && (
+              <button
+                onClick={onOpenVercelGuide}
+                className="px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 font-medium flex items-center gap-1.5 transition-colors cursor-pointer text-xs"
+                title="Buka panduan mengatasi error domain di Vercel"
+              >
+                <Globe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Solusi Vercel</span>
+              </button>
+            )}
+
             {onOpenAuthGuide && (
               <button
                 onClick={onOpenAuthGuide}

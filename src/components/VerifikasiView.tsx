@@ -99,7 +99,6 @@ export const VerifikasiView: React.FC<VerifikasiViewProps> = ({
 
   const handleReject = () => {
     if (!selectedDoc || !rejectReason.trim()) {
-      alert('Harap masukkan alasan penolakan kartu indeks');
       return;
     }
 
