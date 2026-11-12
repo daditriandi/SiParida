@@ -1,0 +1,6 @@
+{
+  "name": "SiParida - Sistem Panduan Arsip dan Data",
+  "description": "Sistem Panduan Arsip dan Data (SiParida) Kedeputian Bidang Koordinasi Komunikasi dan Informasi untuk pengelolaan berkas kegiatan utuh 8 tahap.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
