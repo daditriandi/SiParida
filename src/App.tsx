@@ -532,9 +532,12 @@ export default function App() {
           {currentPage === 'unggah' && (
             <UnggahView
               berkasList={berkasList}
+              dokumenList={dokumenList}
               onDokumenUploaded={handleDokumenUploaded}
               currentUser={{ inisial: 'RJS', role: currentRole }}
               preselectedTahap={uploadPreselectedTahap}
+              onPreviewDokumen={(doc) => setSelectedPreviewDoc(doc)}
+              onOpenBerkas={(id) => setSelectedBerkasDetailId(id)}
             />
           )}
 

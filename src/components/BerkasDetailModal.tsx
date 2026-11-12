@@ -46,15 +46,15 @@ export const BerkasDetailModal: React.FC<BerkasDetailModalProps> = ({
   onSyncDokumen,
   onCreateDrafPenagihan,
 }) => {
-  const [activeTab, setActiveTab] = useState<number>(1);
+  const [activeTab, setActiveTab] = useState<number>(0);
 
   const docsInBerkas = dokumenList.filter((d) => d.berkasId === berkas.id);
   const recsInBerkas = rekomendasiList.filter((r) => r.berkasId === berkas.id);
   const risksInBerkas = risikoList.filter((k) => k.berkasId === berkas.id);
 
-  const currentTahapDef = TAHAPAN_BERKAS.find((t) => t.id === activeTab)!;
-  const currentTahapDocs = docsInBerkas.filter((d) => d.tahapId === activeTab);
-  const currentTahapStatus = berkas.tahapanStatus[activeTab] || 'Belum Ada';
+  const currentTahapDef = TAHAPAN_BERKAS.find((t) => t.id === activeTab) || TAHAPAN_BERKAS[0];
+  const currentTahapDocs = activeTab === 0 ? docsInBerkas : docsInBerkas.filter((d) => d.tahapId === activeTab);
+  const currentTahapStatus = activeTab === 0 ? berkas.statusKelengkapan : (berkas.tahapanStatus[activeTab] || 'Belum Ada');
 
   const handleDownloadLembarBerkas = () => {
     const tanggalCetak = new Intl.DateTimeFormat('id-ID', {
@@ -183,6 +183,27 @@ Kabag Administrasi Kedeputian Bidang Koordinasi Komunikasi dan Informasi
         {/* 8-Stage Navigation Tabs */}
         <div className="border-b border-slate-200 dark:border-slate-800 px-5 bg-white dark:bg-slate-900 shrink-0 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max py-2">
+            {/* Tab Semua Dokumen */}
+            <button
+              onClick={() => setActiveTab(0)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                activeTab === 0
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span>Semua Dokumen</span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                  activeTab === 0
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                {docsInBerkas.length}
+              </span>
+            </button>
+
             {TAHAPAN_BERKAS.map((th) => {
               const isActive = activeTab === th.id;
               const status = berkas.tahapanStatus[th.id] || 'Belum Ada';
@@ -218,60 +239,88 @@ Kabag Administrasi Kedeputian Bidang Koordinasi Komunikasi dan Informasi
 
         {/* Content Body per Active Stage */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Stage Overview Banner */}
-          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                <span>TAHAPAN {activeTab} DARI 8</span>
-                <span>·</span>
-                <StatusChip status={currentTahapStatus} />
+          {activeTab === 0 ? (
+            /* All Documents Overview Banner */
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                  <span>SEMUA TAHAPAN KEARSIPAN</span>
+                  <span>·</span>
+                  <StatusChip status={berkas.statusKelengkapan} />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                  Daftar Seluruh Dokumen Terdaftar dalam Berkas Ini ({docsInBerkas.length})
+                </h2>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                  Menampilkan seluruh naskah dinas dari Tahap 1 hingga Tahap 8 yang telah dimasukkan ke dalam berkas kegiatan ini.
+                </p>
               </div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                {currentTahapDef.nama}
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                {currentTahapDef.deskripsi}
-              </p>
+              <button
+                onClick={() => onUnggahTahap(1)}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shrink-0 cursor-pointer"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Unggah Dokumen Baru</span>
+              </button>
             </div>
-            <button
-              onClick={() => onUnggahTahap(activeTab)}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shrink-0 cursor-pointer"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Unggah ke Tahap Ini</span>
-            </button>
-          </div>
-
-          {/* Mandatory Archive Checklist */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
-            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-teal-600" />
-              Daftar Standar Arsip Wajib Tahap Ini
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              {currentTahapDef.arsipWajib.map((wajibItem, idx) => {
-                const isFulfilled = currentTahapDocs.some(
-                  (d) =>
-                    d.namaFile.toLowerCase().includes(wajibItem.toLowerCase().slice(0, 5)) ||
-                    d.ringkasan.toLowerCase().includes(wajibItem.toLowerCase().slice(0, 5))
-                );
-
-                return (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs ${
-                      isFulfilled
-                        ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <span className="shrink-0">{isFulfilled ? '✓' : '○'}</span>
-                    <span className="font-medium truncate">{wajibItem}</span>
+          ) : (
+            <>
+              {/* Stage Overview Banner */}
+              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+                    <span>TAHAPAN {activeTab} DARI 8</span>
+                    <span>·</span>
+                    <StatusChip status={currentTahapStatus} />
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                    {currentTahapDef.nama}
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                    {currentTahapDef.deskripsi}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onUnggahTahap(activeTab)}
+                  className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm shrink-0 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Unggah ke Tahap Ini</span>
+                </button>
+              </div>
+
+              {/* Mandatory Archive Checklist */}
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600" />
+                  Daftar Standar Arsip Wajib Tahap Ini
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {currentTahapDef.arsipWajib.map((wajibItem, idx) => {
+                    const isFulfilled = currentTahapDocs.some(
+                      (d) =>
+                        d.namaFile.toLowerCase().includes(wajibItem.toLowerCase().slice(0, 5)) ||
+                        d.ringkasan.toLowerCase().includes(wajibItem.toLowerCase().slice(0, 5))
+                    );
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex items-center gap-2 p-2.5 rounded-lg border text-xs ${
+                          isFulfilled
+                            ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        <span className="shrink-0">{isFulfilled ? '✓' : '○'}</span>
+                        <span className="font-medium truncate">{wajibItem}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Documents in Current Stage */}
           <div className="space-y-3">

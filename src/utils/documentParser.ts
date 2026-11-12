@@ -79,14 +79,25 @@ export async function parseUploadedFile(file: File): Promise<ParsedDocumentInput
       const result = await mammoth.extractRawText({ arrayBuffer: buffer });
       textContent = result.value || '';
     } else if (['pdf', 'png', 'jpg', 'jpeg', 'webp', 'mp4', 'mp3', 'wav', 'm4a'].includes(ext)) {
-      // Multimodal files -> convert to base64
-      base64Data = await fileToBase64(file);
+      // Only encode base64 if <= 2.5MB to avoid huge JSON payloads that fail fetch
+      if (fileSize <= 2.5 * 1024 * 1024) {
+        try {
+          base64Data = await fileToBase64(file);
+        } catch {
+          // Ignore base64 encoding error, fall back to filename & metadata
+        }
+      }
       textContent = `[File Multimodal: ${fileName} (${mimeType || ext}) - Ukuran: ${(fileSize / 1024).toFixed(0)} KB]`;
     } else {
-      // PPTX or other formats that cannot be parsed automatically
       isUnsupported = true;
       unsupportedReason = `Format .${ext} tidak mendukung ekstraksi teks otomatis di peramban. File dan metadata tersimpan aman; silakan lengkapi kartu indeks secara manual.`;
-      base64Data = await fileToBase64(file);
+      if (fileSize <= 2.5 * 1024 * 1024) {
+        try {
+          base64Data = await fileToBase64(file);
+        } catch {
+          // ignore
+        }
+      }
     }
   } catch (err: any) {
     console.warn(`Extraction fallback for ${fileName}:`, err);
@@ -137,10 +148,74 @@ function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const res = reader.result as string;
-      // Strip metadata header e.g. "data:application/pdf;base64,"
       const base64 = res.split(',')[1] || res;
       resolve(base64);
     };
     reader.onerror = (err) => reject(err);
   });
+}
+
+/**
+ * Deterministic metadata inference based on filename and contents.
+ * Used for instant, zero-delay pre-filling so the user never sees empty or hanging fields.
+ */
+export function guessDocumentMetadata(fileName: string, textSnippet: string = '') {
+  const combined = (fileName + ' ' + textSnippet).toLowerCase();
+
+  let tahapId = 2;
+  let kodeKlasifikasi = 'KA.02.01';
+  let defaultTahapPrefix = 'T2';
+
+  if (/kerangka|kak|tor|nota dinas usulan|anggaran|rab|rencana|undangan|surat tugas/i.test(combined)) {
+    tahapId = 1;
+    kodeKlasifikasi = 'KA.01.01';
+    defaultTahapPrefix = 'T1';
+  } else if (/foto|dokumentasi|banner|spanduk|rekaman|video|infografis/i.test(combined)) {
+    tahapId = 3;
+    kodeKlasifikasi = 'KA.03.01';
+    defaultTahapPrefix = 'T3';
+  } else if (/laporan|hasil|notula|risalah|kajian|evaluasi/i.test(combined)) {
+    tahapId = 4;
+    kodeKlasifikasi = 'KA.04.01';
+    defaultTahapPrefix = 'T4';
+  } else if (/rekomendasi|arahan|kebijakan|usulan kebijakan/i.test(combined)) {
+    tahapId = 5;
+    kodeKlasifikasi = 'KA.05.01';
+    defaultTahapPrefix = 'T5';
+  } else if (/tindak lanjut|surat jawaban|penagihan|balasan|disposisi/i.test(combined)) {
+    tahapId = 6;
+    kodeKlasifikasi = 'KA.05.02';
+    defaultTahapPrefix = 'T6';
+  } else if (/kendala|hambatan|masalah/i.test(combined)) {
+    tahapId = 7;
+    kodeKlasifikasi = 'KA.06.01';
+    defaultTahapPrefix = 'T7';
+  } else if (/mitigasi|penanganan|solusi|sop/i.test(combined)) {
+    tahapId = 8;
+    kodeKlasifikasi = 'KA.06.02';
+    defaultTahapPrefix = 'T8';
+  }
+
+  // Generate standardized file name: T[TAHAP]_[KODE]_[CLEAN_NAME].EXT
+  const cleanBase = fileName
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .toUpperCase();
+  const ext = fileName.split('.').pop()?.toUpperCase() || 'PDF';
+  const namaFileStandar = `${defaultTahapPrefix}_${kodeKlasifikasi}_${cleanBase}.${ext}`;
+
+  // Default summary based on file name
+  const readableName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+  const ringkasan = `Dokumen ${readableName} sebagai bukti kearsipan dinas pada tahapan ${tahapId} rangkaian kegiatan kedeputian Komunikasi dan Informasi.`;
+
+  // Keywords
+  const kataKunci = ['Kominfo', 'Kearsipan', 'Kedeputian', readableName.slice(0, 15).trim()].filter(Boolean);
+
+  return {
+    tahapId,
+    kodeKlasifikasi,
+    namaFileStandar,
+    ringkasan,
+    kataKunci,
+  };
 }
