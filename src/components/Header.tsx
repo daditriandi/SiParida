@@ -97,19 +97,20 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Role Selector for Interactive Demo */}
         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
-          <UserCheck className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ml-1.5 shrink-0" />
-          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 hidden xl:inline">Peran:</span>
+          <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 ml-1.5 shrink-0" />
+          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 hidden xl:inline">Peran Agen:</span>
           <select
             value={currentRole}
             onChange={(e) => onRoleChange(e.target.value as UserRole)}
             aria-label="Pilih Peran Pengguna Demo"
-            className="text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            className="text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2.5 py-1 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer max-w-[210px] sm:max-w-[260px] truncate"
           >
-            {USER_ROLES.map((r) => (
-              <option key={r.role} value={r.role}>
-                {r.title}
-              </option>
-            ))}
+            <option value="Sesdep">1. Sekretaris Deputi (Cari & Setujui Ringkasan)</option>
+            <option value="Pelaksana Asdep">2. Pelaksana Asdep (Unggah & Periksa AI)</option>
+            <option value="Arsiparis">3. Arsiparis (Verifikasi Kode & Nama)</option>
+            <option value="Asdep">4. Asisten Deputi (Pantau Rekomendasi & TL)</option>
+            <option value="Deputi">5. Deputi (Membaca Ringkasan Triwulan)</option>
+            <option value="Admin">Administrator (Riandi J. Sulistyono)</option>
           </select>
         </div>
 

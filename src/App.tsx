@@ -9,6 +9,7 @@ import {
   LogAudit,
   PengaturanSistem,
   USER_ROLES,
+  ROLE_AUTHORITIES,
 } from './types';
 import {
   initializeStorageIfNeeded,
@@ -46,6 +47,7 @@ import { AuditLogView } from './components/AuditLogView';
 import { DokumenPreviewModal } from './components/DokumenPreviewModal';
 import { GoogleAuthGuideModal } from './components/GoogleAuthGuideModal';
 import { VercelDomainModal } from './components/VercelDomainModal';
+import { RoleAuthorityMatrixModal } from './components/RoleAuthorityMatrixModal';
 import { User } from 'firebase/auth';
 import {
   initAuth,
@@ -78,6 +80,7 @@ export default function App() {
   const [googleUser, setGoogleUser] = useState<User | null>(() => getCurrentUser());
   const [isAuthGuideOpen, setIsAuthGuideOpen] = useState(false);
   const [isVercelDomainModalOpen, setIsVercelDomainModalOpen] = useState(false);
+  const [isRoleMatrixModalOpen, setIsRoleMatrixModalOpen] = useState(false);
   const [isSyncingDashboard, setIsSyncingDashboard] = useState(false);
   const [lastSyncedDashboardUrl, setLastSyncedDashboardUrl] = useState<string | null>(null);
   const [syncToast, setSyncToast] = useState<{
@@ -130,10 +133,13 @@ export default function App() {
   const handleRoleChange = (role: UserRole) => {
     setRoleState(role);
     setCurrentRole(role);
-    const roleDef = USER_ROLES.find((r) => r.role === role);
-    if (roleDef?.defaultUnit) {
-      setUnitState(roleDef.defaultUnit);
-      setCurrentUnit(roleDef.defaultUnit);
+    const authDef = ROLE_AUTHORITIES[role];
+    if (authDef) {
+      if (authDef.defaultUnit) {
+        setUnitState(authDef.defaultUnit);
+        setCurrentUnit(authDef.defaultUnit);
+      }
+      setCurrentPage(authDef.defaultPage as PageId);
     }
   };
 
@@ -466,17 +472,27 @@ export default function App() {
 
         <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
           {/* Role Helper Banner for Live Demo */}
-          <div className="mb-6 p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200">
-            <div className="flex items-center gap-2">
-              <span className="font-bold">Mode Peran Demo:</span>
-              <span className="font-semibold text-blue-700 dark:text-blue-300">
-                {USER_ROLES.find((r) => r.role === currentRole)?.title}
+          <div className="mb-6 p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-blue-950 dark:text-blue-200">
+            <div className="flex items-center gap-2.5">
+              <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-blue-600 text-white shrink-0">
+                Agen Aktif
               </span>
-              <span>— {USER_ROLES.find((r) => r.role === currentRole)?.deskripsi}</span>
+              <div>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {ROLE_AUTHORITIES[currentRole]?.title || currentRole}
+                </span>
+                <span className="text-slate-600 dark:text-slate-300 ml-1.5 font-medium">
+                  — {ROLE_AUTHORITIES[currentRole]?.fungsiUtama}
+                </span>
+              </div>
             </div>
-            <span className="font-mono text-[11px] text-blue-600 dark:text-blue-400 font-semibold hidden md:inline">
-              Gunakan pemilih peran di pojok kanan atas untuk berpindah sudut pandang
-            </span>
+            <button
+              onClick={() => setIsRoleMatrixModalOpen(true)}
+              className="px-3 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors shrink-0 cursor-pointer self-start sm:self-auto flex items-center gap-1.5"
+            >
+              <span>Matriks 5 Agent</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </div>
 
           {/* Page Routing */}
@@ -498,6 +514,9 @@ export default function App() {
               onOpenVercelGuide={() => setIsVercelDomainModalOpen(true)}
               isSyncingDashboard={isSyncingDashboard}
               lastSyncedDashboardUrl={lastSyncedDashboardUrl}
+              currentRole={currentRole}
+              onNavigateToLaporanTriwulan={() => setCurrentPage('laporan')}
+              onOpenRoleMatrixModal={() => setIsRoleMatrixModalOpen(true)}
             />
           )}
 
@@ -561,6 +580,7 @@ export default function App() {
               risikoList={risikoList}
               onPreviewDokumen={(doc) => setSelectedPreviewDoc(doc)}
               onOpenBerkas={(id) => setSelectedBerkasDetailId(id)}
+              currentRole={currentRole}
             />
           )}
 
@@ -639,6 +659,14 @@ export default function App() {
       <VercelDomainModal
         isOpen={isVercelDomainModalOpen}
         onClose={() => setIsVercelDomainModalOpen(false)}
+      />
+
+      {/* 5-Agent Authority Matrix Modal */}
+      <RoleAuthorityMatrixModal
+        isOpen={isRoleMatrixModalOpen}
+        onClose={() => setIsRoleMatrixModalOpen(false)}
+        currentRole={currentRole}
+        onSelectRole={handleRoleChange}
       />
 
       {/* Google Docs Sync Feedback Toast */}

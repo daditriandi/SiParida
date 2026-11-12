@@ -33,44 +33,200 @@ export const DAFTAR_BULAN_2026 = [
 export type PeriodeBulan2026 = (typeof DAFTAR_BULAN_2026)[number];
 
 export type UserRole =
+  | 'Deputi'
   | 'Sesdep'
+  | 'Asdep'
   | 'Pelaksana Asdep'
   | 'Arsiparis'
-  | 'Asdep'
   | 'Admin';
 
-export const USER_ROLES: { role: UserRole; title: string; deskripsi: string; defaultUnit?: UnitKerja }[] = [
-  {
+export interface RoleAuthorityDefinition {
+  role: UserRole;
+  title: string;
+  singkatan: string;
+  badgeLabel: string;
+  fungsiUtama: string;
+  kewenangan: string[];
+  larangan: string[];
+  allowedPages: string[];
+  defaultPage: string;
+  defaultUnit?: UnitKerja;
+  canUpload: boolean;
+  canVerifyCard: boolean;
+  canApproveDraf: boolean;
+  canApproveSummary: boolean;
+  canSearch: boolean;
+  canReadQuarterlyOnly?: boolean;
+}
+
+export const ROLE_AUTHORITIES: Record<UserRole, RoleAuthorityDefinition> = {
+  Sesdep: {
     role: 'Sesdep',
     title: 'Sekretaris Deputi',
-    deskripsi: 'Melihat semua berkas, pemantauan menyeluruh, pengguna utama pimpinan',
+    singkatan: 'Sesdep',
+    badgeLabel: 'Cari Arsip, Pantau Dashboard & Setujui Ringkasan',
+    fungsiUtama: 'Hanya bisa mencari arsip, memantau dashboard, dan menyetujui ringkasan',
+    kewenangan: [
+      'Pencarian cerdas temu kembali arsip dinas (target ≤ 30 menit)',
+      'Memantau seluruh indikator KPI kearsipan dan matriks 8 tahap di Dashboard',
+      'Menyetujui & menyinkronkan Ringkasan Eksekutif Dashboard ke Google Docs resmi',
+      'Melihat laporan akuntabilitas kearsipan dinas',
+    ],
+    larangan: [
+      'Tidak mengunggah dokumen teknis operasional (tugas Pelaksana Asdep)',
+      'Tidak memverifikasi kartu indeks atau kode klasifikasi teknis (tugas Arsiparis)',
+    ],
+    allowedPages: ['dashboard', 'cari', 'laporan'],
+    defaultPage: 'dashboard',
     defaultUnit: 'Sekretaris Deputi',
+    canUpload: false,
+    canVerifyCard: false,
+    canApproveDraf: false,
+    canApproveSummary: true,
+    canSearch: true,
   },
-  {
+  'Pelaksana Asdep': {
     role: 'Pelaksana Asdep',
-    title: 'Pelaksana Asdep (Staff)',
-    deskripsi: 'Unggah dan sunting berkas unit kerja yang ditugaskan',
+    title: 'Pelaksana Asdep',
+    singkatan: 'Pelaksana',
+    badgeLabel: 'Unggah Dokumen & Periksa Usulan AI',
+    fungsiUtama: 'Hanya bisa unggah dokumen dan periksa usulan AI',
+    kewenangan: [
+      'Mengunggah berkas dokumen kegiatan pada 8 tahapan kearsipan dinas',
+      'Memeriksa hasil ekstraksi AI: usulan nama file terstandar, usulan kode klasifikasi, ringkasan, dan kata kunci',
+      'Memeriksa deteksi data sensitif (PII: NIK & No. HP) sebelum dokumen didaftarkan',
+      'Melihat status kelengkapan berkas kegiatan unit kerjanya',
+    ],
+    larangan: [
+      'Tidak memverifikasi atau menyetujui kartu indeks (wewenang Arsiparis)',
+      'Tidak menyetujui draf surat penagihan rekomendasi (wewenang Asdep)',
+      'Tidak menyetujui ringkasan eksekutif (wewenang Sesdep)',
+    ],
+    allowedPages: ['unggah', 'berkas'],
+    defaultPage: 'unggah',
     defaultUnit: 'Asdep Koordinasi Pengelolaan Komunikasi & Informasi Publik',
+    canUpload: true,
+    canVerifyCard: false,
+    canApproveDraf: false,
+    canApproveSummary: false,
+    canSearch: false,
   },
-  {
+  Arsiparis: {
     role: 'Arsiparis',
     title: 'Arsiparis Unit Kearsipan',
-    deskripsi: 'Verifikasi kartu indeks usulan AI, penomoran, penataan berkas utuh',
+    singkatan: 'Arsiparis',
+    badgeLabel: 'Verifikasi Kode, Nama File & Kelengkapan',
+    fungsiUtama: 'Hanya memverifikasi kode, nama file, dan kelengkapan',
+    kewenangan: [
+      'Memverifikasi keabsahan kode klasifikasi kearsipan dinas',
+      'Menetapkan dan mengoreksi format penamaan file baku dinas',
+      'Menyetujui (Approve) atau menolak (Reject) usulan kartu indeks dengan catatan perbaikan',
+      'Memeriksa matriks kelengkapan 8 tahap rangkaian berkas utuh',
+      'Menelusuri register arsip untuk kontrol mutu kearsipan',
+    ],
+    larangan: [
+      'Tidak mengunggah dokumen kegiatan operasional unit (tugas Pelaksana Asdep)',
+      'Tidak menyetujui draf naskah dinas penagihan rekomendasi (wewenang Asdep)',
+      'Tidak menyetujui ringkasan eksekutif (wewenang Sesdep)',
+    ],
+    allowedPages: ['verifikasi', 'berkas', 'cari'],
+    defaultPage: 'verifikasi',
     defaultUnit: 'Sekretaris Deputi',
+    canUpload: false,
+    canVerifyCard: true,
+    canApproveDraf: false,
+    canApproveSummary: false,
+    canSearch: true,
   },
-  {
+  Asdep: {
     role: 'Asdep',
-    title: 'Asisten Deputi (Pimpinan Unit)',
-    deskripsi: 'Melihat dan menyetujui draf penagihan rekomendasi unitnya',
+    title: 'Asisten Deputi',
+    singkatan: 'Asdep',
+    badgeLabel: 'Pantau Rekomendasi & Setujui Dokumen Draf',
+    fungsiUtama: 'Hanya memantau rekomendasi dan setujui dokumen',
+    kewenangan: [
+      'Memantau perkembangan pemenuhan rekomendasi kebijakan unit kerjanya lintas K/L',
+      'Menelaah dan menyetujui Draf Surat Penagihan Rekomendasi Kebijakan',
+      'Mengunduh draf naskah dinas Word (.docx) atau sinkronisasi ke Google Docs',
+      'Memantau berkas kegiatan unit kerjanya',
+    ],
+    larangan: [
+      'Tidak mengunggah dokumen teknis operasional (tugas Pelaksana Asdep)',
+      'Tidak memverifikasi kode klasifikasi teknis arsip (tugas Arsiparis)',
+    ],
+    allowedPages: ['rekomendasi', 'dashboard', 'berkas'],
+    defaultPage: 'rekomendasi',
     defaultUnit: 'Asdep Koordinasi Pelindungan Data dan Transaksi Elektronik',
+    canUpload: false,
+    canVerifyCard: false,
+    canApproveDraf: true,
+    canApproveSummary: false,
+    canSearch: false,
   },
-  {
-    role: 'Admin',
-    title: 'Administrator Sistem',
-    deskripsi: 'Riandi J. Sulistyono, S.I.Kom., M.Si. (Kabag Administrasi) - Kelola sumber pengetahuan & prompt',
+  Deputi: {
+    role: 'Deputi',
+    title: 'Deputi Bidang Koordinasi',
+    singkatan: 'Deputi',
+    badgeLabel: 'Membaca Ringkasan Triwulan',
+    fungsiUtama: 'Hanya membaca ringkasan triwulan',
+    kewenangan: [
+      'Membaca Laporan Ringkasan Eksekutif Triwulan (Triwulan I s.d. IV 2026)',
+      'Membaca rekapitulasi capaian kepatuhan 8 tahap kearsipan seluruh Asisten Deputi',
+      'Melihat status capaian tindak lanjut rekomendasi strategis pimpinan',
+      'Memantau Ringkasan Dashboard Eksekutif (Mode Read-Only)',
+    ],
+    larangan: [
+      'Bebas dari beban teknis input dokumen, unggah, dan verifikasi kartu',
+    ],
+    allowedPages: ['laporan', 'dashboard'],
+    defaultPage: 'laporan',
     defaultUnit: 'Sekretaris Deputi',
+    canUpload: false,
+    canVerifyCard: false,
+    canApproveDraf: false,
+    canApproveSummary: false,
+    canSearch: false,
+    canReadQuarterlyOnly: true,
   },
-];
+  Admin: {
+    role: 'Admin',
+    title: 'Administrator Sistem (Kabag Administrasi)',
+    singkatan: 'Admin',
+    badgeLabel: 'Pengelolaan Penuh Sistem & Sumber Pengetahuan',
+    fungsiUtama: 'Riandi J. Sulistyono, S.I.Kom., M.Si. - Pengelolaan menyeluruh, audit log, dan integrasi Google Docs',
+    kewenangan: [
+      'Akses ke seluruh fitur dan pengujian seluruh mode peran agen',
+      'Konfigurasi sistem, sumber pengetahuan, dan prompt AI kearsipan',
+      'Pemantauan Log Audit aktivitas kearsipan',
+    ],
+    larangan: [],
+    allowedPages: [
+      'dashboard',
+      'berkas',
+      'unggah',
+      'cari',
+      'rekomendasi',
+      'verifikasi',
+      'laporan',
+      'pengaturan',
+      'audit',
+    ],
+    defaultPage: 'dashboard',
+    defaultUnit: 'Sekretaris Deputi',
+    canUpload: true,
+    canVerifyCard: true,
+    canApproveDraf: true,
+    canApproveSummary: true,
+    canSearch: true,
+  },
+};
+
+export const USER_ROLES = (Object.values(ROLE_AUTHORITIES) as RoleAuthorityDefinition[]).map((auth) => ({
+  role: auth.role,
+  title: auth.title,
+  deskripsi: auth.fungsiUtama,
+  defaultUnit: auth.defaultUnit,
+}));
 
 export interface TahapanDef {
   id: number;

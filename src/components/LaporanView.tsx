@@ -7,6 +7,7 @@ import {
   UNIT_KERJA_LIST,
   UnitKerja,
   DAFTAR_BULAN_2026,
+  UserRole,
 } from '../types';
 import { StatusChip } from './StatusChip';
 import {
@@ -21,6 +22,9 @@ import {
   Eye,
   Building,
   Calendar,
+  Sparkles,
+  TrendingUp,
+  Award,
 } from 'lucide-react';
 
 interface LaporanViewProps {
@@ -30,6 +34,7 @@ interface LaporanViewProps {
   risikoList: KendalaRisikoItem[];
   onPreviewDokumen: (doc: DokumenArsip) => void;
   onOpenBerkas: (berkasId: string) => void;
+  currentRole?: UserRole;
 }
 
 interface EvidenceModalState {
@@ -49,8 +54,12 @@ export const LaporanView: React.FC<LaporanViewProps> = ({
   risikoList,
   onPreviewDokumen,
   onOpenBerkas,
+  currentRole = 'Sesdep',
 }) => {
   const [selectedBulan, setSelectedBulan] = useState('Semua');
+  const [activeTab, setActiveTab] = useState<'triwulan' | 'bulanan'>(
+    currentRole === 'Deputi' ? 'triwulan' : 'triwulan'
+  );
   const [evidenceModal, setEvidenceModal] = useState<EvidenceModalState | null>(null);
 
   // Compute unit summary filtered by selectedBulan (Januari 2026 s.d. Desember 2026)
@@ -196,7 +205,241 @@ Seluruh data angka kinerja di atas tertaut langsung dengan arsip buktinya di sis
         </div>
       </div>
 
-      {/* Main Table: Clickable Numbers Linked to Proof Evidence */}
+      {/* Tab Switcher: Ringkasan Triwulan (Deputi) vs Matriks Kinerja Bulanan */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-1">
+        <button
+          onClick={() => setActiveTab('triwulan')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'triwulan'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          <span>Ringkasan Eksekutif Triwulan (Kewenangan Deputi)</span>
+          {currentRole === 'Deputi' && (
+            <span className="text-[10px] bg-amber-400 text-slate-900 px-1.5 py-0.2 rounded font-mono font-bold">
+              Fokus Utama Deputi
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('bulanan')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+            activeTab === 'bulanan'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>Matriks Kinerja Kearsipan per Unit (Bulanan)</span>
+        </button>
+      </div>
+
+      {/* Tab 1: Ringkasan Eksekutif Triwulan (Khusus Deputi & Pimpinan) */}
+      {activeTab === 'triwulan' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 text-white border border-blue-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30">
+                  Kewenangan Khusus: Deputi
+                </span>
+                <span className="text-[10px] text-blue-200 font-medium">Tahun Anggaran 2026</span>
+              </div>
+              <h2 className="text-base font-bold text-white tracking-tight">
+                Laporan Ringkasan Kearsipan Eksekutif Triwulanan Kedeputian
+              </h2>
+              <p className="text-xs text-blue-200/80 mt-1 max-w-2xl leading-relaxed">
+                Deputi berwenang membaca ringkasan berkala pencapaian 8 tahap kearsipan, hasil temu kembali arsip, dan tindak lanjut rekomendasi strategis lintas K/L tanpa terbebani teknis administrasi.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleExportPDF}
+                className="px-3.5 py-2 text-xs font-bold bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Ringkasan Eksekutif</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Triwulan I */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                    Triwulan I (Q1 2026)
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    Periode: Januari – Maret 2026
+                  </h3>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  ● Selesai & Terverifikasi
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 dark:border-slate-800 text-center">
+                <div>
+                  <div className="text-[11px] text-slate-500">Berkas Kegiatan</div>
+                  <div className="text-base font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+                    {berkasList.filter((b) => ['Januari 2026', 'Februari 2026', 'Maret 2026'].includes(b.periodeBulan)).length || 6}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Kepatuhan 8 Tahap</div>
+                  <div className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    68%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Rekomendasi Tuntas</div>
+                  <div className="text-base font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5">
+                    6 Selesai
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <strong>Catatan Eksekutif untuk Deputi:</strong> Seluruh berkas kegiatan Q1 pada 6 unit kerja telah tersinkronisasi. Waktu temu kembali arsip mencapai rata-rata <strong>1,4 detik</strong> (target nasional ≤ 30 menit terpenuhi). Sebanyak 6 rekomendasi strategis telah selesai ditindaklanjuti kementerian/lembaga mitra.
+              </div>
+            </div>
+
+            {/* Triwulan II */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                    Triwulan II (Q2 2026)
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    Periode: April – Juni 2026
+                  </h3>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  ● Sedang Berjalan
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 dark:border-slate-800 text-center">
+                <div>
+                  <div className="text-[11px] text-slate-500">Berkas Terdaftar</div>
+                  <div className="text-base font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+                    {berkasList.filter((b) => ['April 2026', 'Mei 2026', 'Juni 2026'].includes(b.periodeBulan)).length || 4}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Kepatuhan Berjalan</div>
+                  <div className="text-base font-bold font-mono text-blue-600 dark:text-blue-400 mt-0.5">
+                    38%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Perlu Ditegur</div>
+                  <div className="text-base font-bold font-mono text-rose-600 dark:text-rose-400 mt-0.5">
+                    1 Penagihan
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <strong>Catatan Eksekutif untuk Deputi:</strong> Fasilitasi kegiatan koordinasi Asdep I, II, dan IV sedang berlangsung. Terdapat 1 rekomendasi yang mendekati batas tenggat waktu dan telah disiapkan naskah dinas penagihan resmi oleh Asdep terkait.
+              </div>
+            </div>
+
+            {/* Triwulan III */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                    Triwulan III (Q3 2026)
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    Periode: Juli – September 2026
+                  </h3>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                  ○ Tahap Perencanaan
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 dark:border-slate-800 text-center">
+                <div>
+                  <div className="text-[11px] text-slate-500">Target Berkas</div>
+                  <div className="text-base font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+                    6 Berkas
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Fokus Tahap</div>
+                  <div className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">
+                    Tahap 1 (Perencanaan)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Status Anggaran</div>
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-1">
+                    Sesuai DIPA
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <strong>Catatan Eksekutif untuk Deputi:</strong> Persiapan dokumen KAK/TOR, RAB, dan Nota Dinas persetujuan narasumber untuk kegiatan koordinasi lintas sektor pada semester kedua tahun 2026.
+              </div>
+            </div>
+
+            {/* Triwulan IV */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    Triwulan IV (Q4 2026)
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    Periode: Oktober – Desember 2026
+                  </h3>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                  ○ Evaluasi Tahunan
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 dark:border-slate-800 text-center">
+                <div>
+                  <div className="text-[11px] text-slate-500">Konsolidasi Akhir</div>
+                  <div className="text-base font-bold font-mono text-slate-900 dark:text-white mt-0.5">
+                    100% Berkas
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Target Audit ANRI</div>
+                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                    Predikat A (Sangat Baik)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-500">Laporan Akhir</div>
+                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-1">
+                    Desember 2026
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <strong>Catatan Eksekutif untuk Deputi:</strong> Konsolidasi penyerahan berkas statis dan inaktif kepada Arsip Nasional Republik Indonesia (ANRI) serta penyusunan Laporan Akuntabilitas Kinerja Instansi Pemerintah (LAKIP) bidang Komunikasi & Informasi.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 2: Matriks Kinerja Kearsipan Bulanan per Unit Kerja */}
+      {activeTab === 'bulanan' && (
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
@@ -331,6 +574,7 @@ Seluruh data angka kinerja di atas tertaut langsung dengan arsip buktinya di sis
           </table>
         </div>
       </div>
+      )}
 
       {/* Evidence Drilldown Modal (Opening the Exact Proof Behind Numbers) */}
       {evidenceModal && (
